@@ -1,2 +1,5 @@
 # medt-rated
-Medt challange week
+## Medt challange week
+
+TODO:
+- work out the README description.
