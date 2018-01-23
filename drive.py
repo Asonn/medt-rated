@@ -6,8 +6,10 @@ GPIO.setmode(GPIO.BCM)
 
 GPIO.setwarnings(False)
 
-MAX_STOP = 500;
+MAX_STOP = 500
+MAX_STATE_COUNT = 200 
 state = "forward"
+
 # Input pins for Sensors
 LeftSensor = 23
 MiddleSensor = 25
@@ -35,6 +37,12 @@ prev_state = 1
 # Definieer variabelen.
 StepCounter = 0
 StepCount = 8
+stateCount = {
+"forward": 0,
+"left": 0,
+"right": 0
+}
+
 
 # "Vooruit LeftWheel"
 Seq1 = []
@@ -69,6 +77,15 @@ def count():
         StepCounter = 0
     if (StepCounter<0):
         StepCounter = StepCount
+
+def increaseStateCount(direction):
+    global stateCount 
+    myDirectionCount = stateCount[direction] + 1
+    for d in range(0, len(directions)):
+        stateCount[d] = 0
+    
+    stateCount[direction] = myDirectionCount
+    
 
 def drive(direction):
     global StepCounter
@@ -112,13 +129,19 @@ try:
 
             if GPIO.input(LeftSensor) and GPIO.input(RightSensor) and not GPIO.input(MiddleSensor) and StopCounter < MAX_STOP:
                 # go forward
-                state = "forward"
+                increaseStateCount('forward')
+                if stateCount['forward'] > MAX_STATE_COUNT
+                    state = "forward"
                 StopCounter = 0
             elif GPIO.input(LeftSensor) and not GPIO.input(RightSensor) and not GPIO.input(MiddleSensor) or GPIO.input(LeftSensor) and not GPIO.input(RightSensor) and StopCounter < MAX_STOP:
-                state = "right"
+                increaseStateCount('right')
+                if stateCount['right'] > MAX_STATE_COUNT
+                    state = "right"
                 StopCounter = 0
             elif not GPIO.input(LeftSensor) and GPIO.input(RightSensor) and not GPIO.input(MiddleSensor) or not GPIO.input(LeftSensor) and GPIO.input(RightSensor) and StopCounter < MAX_STOP:
-                state = "left"
+                increaseStateCount('left')
+                if stateCount['left'] > MAX_STATE_COUNT
+                    state = "left"
                 StopCounter = 0
             elif not GPIO.input(LeftSensor) and not GPIO.input(RightSensor) and not GPIO.input(MiddleSensor) and StopCounter < MAX_STOP:
                 #keep driving the same direction.
