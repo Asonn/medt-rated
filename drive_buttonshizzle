@@ -1,0 +1,180 @@
+import RPi.GPIO as GPIO
+from time import sleep
+import sys
+
+GPIO.setmode(GPIO.BCM)
+GPIO.setwarnings(False)
+
+MAX_STOP = 8000
+MAX_STATE_COUNT = 0
+state = "forward"
+
+# Input pins for Sensors
+LeftSensor = 23
+MiddleSensor = 25
+RightSensor = 24
+ButtonPin = 21
+
+# Input pins for both left and right wheels
+LeftWheel = [4, 17, 27, 22]
+RightWheel = [26, 19, 13, 9]
+
+# Setup sensors and button as input
+GPIO.setup(LeftSensor, GPIO.IN)
+GPIO.setup(MiddleSensor, GPIO.IN)
+GPIO.setup(RightSensor, GPIO.IN)
+GPIO.setup(ButtonPin, GPIO.IN, GPIO.PUD_UP)
+
+# Setup pins for both left and right wheels
+for pin in RightWheel+LeftWheel:
+    GPIO.setup(pin,GPIO.OUT)
+    GPIO.output(pin, False)
+
+# Default state for the button
+prev_state = 1
+
+# Variables
+StepCounter = 0
+StepCount = 8
+stateCount = {
+"forward": 0,
+"left": 0,
+"right": 0
+}
+
+
+# Forward sequence for the right wheel
+Seq1 = []
+Seq1 = range(0, StepCount)
+Seq1[0] = [1,0,0,0]
+Seq1[1] = [1,1,0,0]
+Seq1[2] = [0,1,0,0]
+Seq1[3] = [0,1,1,0]
+Seq1[4] = [0,0,1,0]
+Seq1[5] = [0,0,1,1]
+Seq1[6] = [0,0,0,1]
+Seq1[7] = [1,0,0,1]
+
+# Backward sequence for the left wheel
+Seq2 = []
+Seq2 = range(0, StepCount)
+Seq2[0] = [0,0,0,1]
+Seq2[1] = [0,0,1,1]
+Seq2[2] = [0,0,1,0]
+Seq2[3] = [0,1,1,0]
+Seq2[4] = [0,1,0,0]
+Seq2[5] = [1,1,0,0]
+Seq2[6] = [1,0,0,0]
+Seq2[7] = [1,0,0,1]
+
+def count():
+    global StepCounter
+    StepCounter += 1
+    
+    # Restart sequence at the end.
+    if (StepCounter==StepCount):
+        StepCounter = 0
+    if (StepCounter<0):
+        StepCounter = StepCount
+
+def increaseStateCount(state):
+    global stateCount
+    currentStateCount = stateCount[state] + 1
+    for states in range(0, len(stateCount)):
+        stateCount[state] = 0
+    
+    stateCount[state] = currentStateCount
+
+
+def drive(direction):
+    global StepCounter
+    
+    # Driving forward
+    if (direction == "forward"):
+        for pin in range(0, 4):
+            xpin = RightWheel[pin]
+            ypin = LeftWheel[pin]
+            GPIO.output(xpin, Seq2[StepCounter][pin])
+            GPIO.output(ypin, Seq1[StepCounter][pin])
+        count()
+        # Wait for the next sequence (lower = faster)
+        sleep(.001)
+
+    # Driving to the left
+    elif (direction == "left"):
+        for pin in range(0, 4):
+            xpin = RightWheel[pin]
+            ypin = LeftWheel[pin]
+            GPIO.output(xpin, Seq2[StepCounter][pin])
+            GPIO.output(ypin, Seq2[StepCounter][pin])
+        count()
+        sleep(.001)
+
+    # Driving to the right
+    else:
+        for pin in range(0, 4):
+            xpin = RightWheel[pin]
+            ypin = LeftWheel[pin]
+            GPIO.output(ypin, Seq1[StepCounter][pin])
+            GPIO.output(xpin, Seq1[StepCounter][pin])
+        count()
+        sleep(.001)
+
+try:
+    while True:
+        curr_state = GPIO.input(ButtonPin)
+        loop_index = 1
+        while (curr_state != prev_state):
+            
+            i = 1
+            if (GPIO.input(ButtonPin) == 0 and i == 1):
+                break
+            
+            # Once pressed set it back to previous state, for an infinite loop
+            curr_state = 0
+            
+            if loop_index == 1:
+                StopCounter = 0
+    
+            # Forward
+            if GPIO.input(LeftSensor) and GPIO.input(RightSensor) and not GPIO.input(MiddleSensor) and StopCounter < MAX_STOP:
+                increaseStateCount('forward')
+                if stateCount['forward'] > MAX_STATE_COUNT:
+                    state = "forward"
+                StopCounter = 0
+            
+            # Right
+            elif GPIO.input(LeftSensor) and not GPIO.input(RightSensor) and not GPIO.input(MiddleSensor) or GPIO.input(LeftSensor) and not GPIO.input(RightSensor) and StopCounter < MAX_STOP:
+                increaseStateCount('right')
+                if stateCount['right'] > MAX_STATE_COUNT:
+                    state = "right"
+                StopCounter = 0
+            
+            # Left
+            elif not GPIO.input(LeftSensor) and GPIO.input(RightSensor) and not GPIO.input(MiddleSensor) or not GPIO.input(LeftSensor) and GPIO.input(RightSensor) and StopCounter < MAX_STOP:
+                increaseStateCount('left')
+                if stateCount['left'] > MAX_STATE_COUNT:
+                    state = "left"
+                StopCounter = 0
+            
+            elif not GPIO.input(LeftSensor) and not GPIO.input(RightSensor) and not GPIO.input(MiddleSensor) and StopCounter < MAX_STOP:
+                # Keep driving the same direction
+                StopCounter = 0
+            
+            else:
+                StopCounter += 1
+            
+            # Drive with the current state.
+            if StopCounter < MAX_STOP:
+                drive(state)
+            
+            if MAX_STOP <= StopCounter:
+                sys.exit("Sorry boss, I've somehow lost my way.")
+            
+            loop_index += 1
+            i = 0
+
+
+except KeyboardInterrupt:
+    GPIO.cleanup()
+GPIO.cleanup()
