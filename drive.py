@@ -36,7 +36,7 @@ prev_state = 1
 StepCounter = 0
 StepCount = 8
 
-# "Vooruit"
+# "Vooruit LeftWheel"
 Seq1 = []
 Seq1 = range(0, StepCount)
 Seq1[0] = [1,0,0,0]
@@ -48,7 +48,7 @@ Seq1[5] = [0,0,1,1]
 Seq1[6] = [0,0,0,1]
 Seq1[7] = [1,0,0,1]
 
-# "Achteruit"
+# "Achteruit LeftWheel"
 Seq2 = []
 Seq2 = range(0, StepCount)
 Seq2[0] = [0,0,0,1]
@@ -86,15 +86,14 @@ def drive(direction):
         for pin in range(0, 4):
             xpin = RightWheel[pin]
             ypin = LeftWheel[pin]
-            GPIO.output(xpin, Seq2[StepCounter][pin])
+            GPIO.output(xpin, Seq1[StepCounter][pin])
         count()
             # Wait for the next sequence (lower = faster)
         sleep(.001)
     else:
         for pin in range(0, 4):
-            xpin = RightWheel[pin]
             ypin = LeftWheel[pin]
-            GPIO.output(ypin, Seq1[StepCounter][pin])
+            GPIO.output(ypin, Seq2[StepCounter][pin])
         count()
             # Wait for the next sequence (lower = faster)
         sleep(.001)
@@ -130,10 +129,8 @@ try:
             # drive with the current state.
             if StopCounter < MAX_STOP:
                 drive(state)
-                print("driving...")
-                print(StopCounter)
 
-            if MAX_STOP == StopCounter:
+            if MAX_STOP =< StopCounter:
                 sys.exit("Sorry boss, I somehow lost my way.")
 
             loop_index += 1
