@@ -71,13 +71,13 @@ def drive():
         xpin = RightWheel[pin]
         ypin = LeftWheel[pin]
 
-        if (direction = "forward"):
+        if (direction == "forward"):
             GPIO.output(xpin, Seq2[StepCounter][pin])
             GPIO.output(ypin, Seq1[StepCounter][pin])
             count()
             # Wait for the next sequence (lower = faster)
             sleep(.001)
-        elif (direction = "left")
+        elif (direction == "left")
             GPIO.output(xpin, Seq2[StepCounter][pin])
             sleep(.003)
             GPIO.output(ypin, Seq1[StepCounter][pin])
