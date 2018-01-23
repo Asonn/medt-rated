@@ -79,7 +79,7 @@ def drive(direction):
             ypin = LeftWheel[pin]
             GPIO.output(xpin, Seq2[StepCounter][pin])
             GPIO.output(ypin, Seq1[StepCounter][pin])
-            count()
+        count()
             # Wait for the next sequence (lower = faster)
         sleep(.001)
     elif (direction == "left"):
@@ -87,7 +87,7 @@ def drive(direction):
             xpin = RightWheel[pin]
             ypin = LeftWheel[pin]
             GPIO.output(xpin, Seq2[StepCounter][pin])
-            count()
+        count()
             # Wait for the next sequence (lower = faster)
         sleep(.001)
     else:
@@ -95,7 +95,7 @@ def drive(direction):
             xpin = RightWheel[pin]
             ypin = LeftWheel[pin]
             GPIO.output(ypin, Seq2[StepCounter][pin])
-            count()
+        count()
             # Wait for the next sequence (lower = faster)
         sleep(.001)
 
