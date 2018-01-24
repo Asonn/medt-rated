@@ -7,9 +7,10 @@ GPIO.setmode(GPIO.BCM)
 GPIO.setwarnings(False)
 
 MAX_STOP = 8000
-MAX_STATE_COUNT = 0
+MAX_STATE_COUNT = 40
 state = "forward"
 
+crossed = False
 crossing = False
 enginesOn = False
 
@@ -34,8 +35,6 @@ for pin in RightWheel+LeftWheel:
     GPIO.setup(pin,GPIO.OUT)
     GPIO.output(pin, False)
 
-# state default button
-prev_state = 1
 
 # Definieer variabelen.
 StepCounter = 0
@@ -107,7 +106,7 @@ def drive(direction):
             xpin = RightWheel[pin]
             ypin = LeftWheel[pin]
             GPIO.output(xpin, Seq2[StepCounter][pin])
-            #GPIO.output(ypin, Seq2[StepCounter][pin])
+            GPIO.output(ypin, Seq2[StepCounter][pin])
         count()
         # Wait for the next sequence (lower = faster)
         sleep(.001)
@@ -142,6 +141,8 @@ try:
                         ypin = LeftWheel[pin]
                         GPIO.output(xpin, 0)
                         GPIO.output(ypin, 0)
+                    crossed = False
+                    crossing = False
                     sleep(1)
                     break;
 
@@ -156,6 +157,8 @@ try:
                     increaseStateCount('forward')
                     if stateCount['forward'] > MAX_STATE_COUNT:
                         state = "forward"
+                        if crossing:
+                            crossed = True
                         crossing = False
                     StopCounter = 0
                 elif (GPIO.input(LeftSensor) and not GPIO.input(RightSensor) and not GPIO.input(MiddleSensor) 
@@ -164,8 +167,7 @@ try:
                     if stateCount['right'] > MAX_STATE_COUNT and not crossing:
                         state = "right"
                     StopCounter = 0
-                elif (not GPIO.input(LeftSensor) and GPIO.input(RightSensor) and not GPIO.input(MiddleSensor) 
-                    or not GPIO.input(LeftSensor) and GPIO.input(RightSensor)):
+                elif not GPIO.input(LeftSensor) and GPIO.input(RightSensor) and not GPIO.input(MiddleSensor) or not GPIO.input(LeftSensor) and GPIO.input(RightSensor):
                     increaseStateCount('left')
                     if stateCount['left'] > MAX_STATE_COUNT and not crossing:
                         state = "left"
@@ -173,16 +175,21 @@ try:
                 elif (not GPIO.input(LeftSensor) and not GPIO.input(RightSensor) and not GPIO.input(MiddleSensor)):
                     #keep driving the same direction.
                     print "cross-section"
-                    increaseStateCount('left')
-                    if stateCount['left'] > MAX_STATE_COUNT:
-                        state = "left"
-                        crossing = True                
+                    increaseStateCount('forward')
+
+                    if stateCount['forward'] > MAX_STATE_COUNT:
+                        state = "forward"
+                        crossing = True  
+                        if crossed:
+                            sys.exit("Here's your pizza bitch.")
+                                      
                     StopCounter = 0
                 else:
                     StopCounter += 1
 
                 # drive with the current state.
-                print "driving! state: " + str(state)  + " crossing? " + str(crossing)
+                print "driving! state: " + str(state)  + " crossing? " + str(crossing) + " crossed? " + str(crossing)
+                print "driving! left: " + str(GPIO.input(LeftSensor)) + " middle: " + str(GPIO.input(MiddleSensor)) + " right: " + str(GPIO.input(RightSensor))
                 drive(state)
 
             else:
