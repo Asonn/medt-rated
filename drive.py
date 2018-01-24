@@ -10,7 +10,7 @@ MAX_STOP = 8000
 MAX_STATE_COUNT = 0
 state = "forward"
 
-
+crossing = False
 enginesOn = False
 
 # Input pins for Sensors
@@ -107,7 +107,7 @@ def drive(direction):
             xpin = RightWheel[pin]
             ypin = LeftWheel[pin]
             GPIO.output(xpin, Seq2[StepCounter][pin])
-            GPIO.output(ypin, Seq2[StepCounter][pin])
+            #GPIO.output(ypin, Seq2[StepCounter][pin])
         count()
         # Wait for the next sequence (lower = faster)
         sleep(.001)
@@ -148,39 +148,46 @@ try:
             if loop_index == 1:
                 StopCounter = 0
 
+            if StopCounter < MAX_STOP: # No timeout yet
 
-            # if there is no light for the middle ONLY
-            if GPIO.input(LeftSensor) and GPIO.input(RightSensor) and not GPIO.input(MiddleSensor) and StopCounter < MAX_STOP:
-                # go forward
-                increaseStateCount('forward')
-                if stateCount['forward'] > MAX_STATE_COUNT:
-                    state = "forward"
-                StopCounter = 0
-            elif GPIO.input(LeftSensor) and not GPIO.input(RightSensor) and not GPIO.input(MiddleSensor) or GPIO.input(LeftSensor) and not GPIO.input(RightSensor) and StopCounter < MAX_STOP:
-                increaseStateCount('right')
-                if stateCount['right'] > MAX_STATE_COUNT:
-                    state = "right"
-                StopCounter = 0
-            elif not GPIO.input(LeftSensor) and GPIO.input(RightSensor) and not GPIO.input(MiddleSensor) or not GPIO.input(LeftSensor) and GPIO.input(RightSensor) and StopCounter < MAX_STOP:
-                increaseStateCount('left')
-                if stateCount['left'] > MAX_STATE_COUNT:
-                    state = "left"
-                StopCounter = 0
-            elif not GPIO.input(LeftSensor) and not GPIO.input(RightSensor) and not GPIO.input(MiddleSensor) and StopCounter < MAX_STOP:
-                #keep driving the same direction.
-                StopCounter = 0
-            else:
-                StopCounter += 1
-            
-            # drive with the current state.
-            if StopCounter < MAX_STOP:
-                print "driving! state: " + str(state) 
+                # if there is no light for the middle ONLY
+                if (GPIO.input(LeftSensor) and GPIO.input(RightSensor) and not GPIO.input(MiddleSensor)):
+                    # go forward
+                    increaseStateCount('forward')
+                    if stateCount['forward'] > MAX_STATE_COUNT:
+                        state = "forward"
+                        crossing = False
+                    StopCounter = 0
+                elif (GPIO.input(LeftSensor) and not GPIO.input(RightSensor) and not GPIO.input(MiddleSensor) 
+                    or GPIO.input(LeftSensor) and not GPIO.input(RightSensor)):
+                    increaseStateCount('right')
+                    if stateCount['right'] > MAX_STATE_COUNT and not crossing:
+                        state = "right"
+                    StopCounter = 0
+                elif (not GPIO.input(LeftSensor) and GPIO.input(RightSensor) and not GPIO.input(MiddleSensor) 
+                    or not GPIO.input(LeftSensor) and GPIO.input(RightSensor)):
+                    increaseStateCount('left')
+                    if stateCount['left'] > MAX_STATE_COUNT and not crossing:
+                        state = "left"
+                    StopCounter = 0
+                elif (not GPIO.input(LeftSensor) and not GPIO.input(RightSensor) and not GPIO.input(MiddleSensor)):
+                    #keep driving the same direction.
+                    print "cross-section"
+                    increaseStateCount('left')
+                    if stateCount['left'] > MAX_STATE_COUNT:
+                        state = "left"
+                        crossing = True                
+                    StopCounter = 0
+                else:
+                    StopCounter += 1
+
+                # drive with the current state.
+                print "driving! state: " + str(state)  + " crossing? " + str(crossing)
                 drive(state)
 
-            
-            if MAX_STOP <= StopCounter:
+            else:
                 sys.exit("Sorry boss, I somehow lost my way.")
-            
+                
             loop_index += 1
 
 except KeyboardInterrupt:
