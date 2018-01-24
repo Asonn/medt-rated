@@ -134,12 +134,16 @@ try:
         loop_index = 1
         while enginesOn:
             
-            if loop_index > 1:
+            if loop_index > 1500: # 1500 x 0.001 sec delay = 1.5 sec hardcoded delay
                 checkStartButton(GPIO.input(ButtonPin))
                 if not enginesOn:
                     sleep(1)
+                    for pin in range(0, 4):
+                        xpin = RightWheel[pin]
+                        ypin = LeftWheel[pin]
+                        GPIO.output(xpin, 0)
+                        GPIO.output(ypin, 0)
                     break;
-
 
             if loop_index == 1:
                 StopCounter = 0
@@ -170,13 +174,14 @@ try:
             
             # drive with the current state.
             if StopCounter < MAX_STOP:
+                print "driving! state: " + str(state) 
                 drive(state)
+
             
             if MAX_STOP <= StopCounter:
                 sys.exit("Sorry boss, I somehow lost my way.")
             
             loop_index += 1
-
 
 except KeyboardInterrupt:
     # GPIO netjes afsluiten
