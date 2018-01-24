@@ -137,12 +137,12 @@ try:
             if loop_index > 1500: # 1500 x 0.001 sec delay = 1.5 sec hardcoded delay
                 checkStartButton(GPIO.input(ButtonPin))
                 if not enginesOn:
-                    sleep(1)
                     for pin in range(0, 4):
                         xpin = RightWheel[pin]
                         ypin = LeftWheel[pin]
                         GPIO.output(xpin, 0)
                         GPIO.output(ypin, 0)
+                    sleep(1)
                     break;
 
             if loop_index == 1:
