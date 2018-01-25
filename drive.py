@@ -8,9 +8,11 @@ GPIO.setmode(GPIO.BCM)
 GPIO.setwarnings(False)
 
 MAX_STOP = 8000
-MIN_STATE_COUNT = 10
+MIN_STATE_COUNT = 0 # 10 preferred
+TURN_STEP_COUNT = 125 #250 preferred # 125 preferred
 
 state = "forward"
+prev_state = "forward"
 destinationState = None
 destinationCrossThreshold = 1000
 
@@ -166,7 +168,7 @@ try:
     while True:
         checkStartButtonInput(GPIO.input(ButtonPin)) # 0 = pressed
         #checkDestinationButtonsInput()
-        destinationState = "softleft" # debug done without dest buttons
+        destinationState = "softright" # debug done without dest buttons
         # print("middle %s" % GPIO.input(MiddleSensor))
         loop_index = 1
         while enginesOn:
@@ -201,30 +203,35 @@ try:
                         crossing = False
                     StopCounter = 0
 
-                elif GPIO.input(LeftSensor) and not GPIO.input(RightSensor) and not GPIO.input(MiddleSensor):
+                elif GPIO.input(LeftSensor) and not GPIO.input(RightSensor) and not GPIO.input(MiddleSensor) or GPIO.input(LeftSensor) and not GPIO.input(RightSensor):
                     increaseStateCount('right')
                     if stateCount['right'] > MIN_STATE_COUNT and not crossing:
                         state = "right"
+                        for i in range(0,TURN_STEP_COUNT):
+                            drive(state)
+
                     StopCounter = 0
 
-                elif GPIO.input(LeftSensor) and not GPIO.input(RightSensor):
-                    increaseStateCount('softright')
-                    if stateCount['softright'] > MIN_STATE_COUNT and not crossing:
-                        state = "softright"
-                    StopCounter = 0
+                #elif GPIO.input(LeftSensor) and not GPIO.input(RightSensor):
+                #    increaseStateCount('softright')
+                #    if stateCount['softright'] > MIN_STATE_COUNT and not crossing:
+                #        state = "softright"
+                #    StopCounter = 0
 
 
-                elif not GPIO.input(LeftSensor) and GPIO.input(RightSensor) and not GPIO.input(MiddleSensor):
+                elif not GPIO.input(LeftSensor) and GPIO.input(RightSensor) and not GPIO.input(MiddleSensor) or not GPIO.input(LeftSensor) and GPIO.input(RightSensor):
                     increaseStateCount('left')
                     if stateCount['left'] > MIN_STATE_COUNT and not crossing:
                         state = "left"
+                        for i in range(0,TURN_STEP_COUNT):
+                            drive(state)                        
                     StopCounter = 0
 
-                elif not GPIO.input(LeftSensor) and GPIO.input(RightSensor):
-                    increaseStateCount('softleft')
-                    if stateCount['softleft'] > MIN_STATE_COUNT and not crossing:
-                        state = "softleft"
-                    StopCounter = 0
+                #elif not GPIO.input(LeftSensor) and GPIO.input(RightSensor):
+                #    increaseStateCount('softleft')
+                #    if stateCount['softleft'] > MIN_STATE_COUNT and not crossing:
+                #        state = "softleft"
+                #    StopCounter = 0
 
 
                 elif not GPIO.input(LeftSensor) and not GPIO.input(RightSensor) and not GPIO.input(MiddleSensor):
@@ -256,10 +263,14 @@ try:
 
                 else:
                     StopCounter += 1
+                    state = "forward"
+                    # all sensors on (not on any black line)
+
 
                 # drive with the current state.
                 print "driving! state: " + str(state)  + " crossing? " + str(crossing) + " crossed? " + str(crossed)
                 #print "driving! left: " + str(GPIO.input(LeftSensor)) + " middle: " + str(GPIO.input(MiddleSensor)) + " right: " + str(GPIO.input(RightSensor))
+                prev_state = state
                 drive(state)
 
             else:
