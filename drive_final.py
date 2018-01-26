@@ -12,7 +12,7 @@ TURN_SEQUENCE_COUNT = 250 # Minimum time in ms before switching state when turni
 
 state = "forward" # default state
 destinationState = None # direction state to go when at a cross point
-destinationCrossThreshold = 500 # time in ms till turn intensity increases while crossing
+destinationCrossThreshold = 1500 # time in ms till turn intensity increases while crossing
 
 
 crossed = False # Has crossed the first intersection
@@ -52,7 +52,7 @@ allWheels = LeftWheel + RightWheel
 GPIO.setup(allWheels,GPIO.OUT)
 GPIO.output(allWheels, False) # Disable engines at start
 
-os.system('mpg321 -q selectdestination.mp3 &')
+os.system('mpg321 -q -g 100 selectdestination.mp3 &')
 
 stateCount = {
 "forward": 0,
@@ -170,7 +170,7 @@ def checkStartButtonInput(input):
             sleep(1.5)
         else:
             enginesOn = not enginesOn
-            os.system('mpg321 -q -Z -g 20 seinfeld.mp3 &') # Seinfeld theme, volume 20%
+            #os.system('mpg321 -q -Z -g 10 pacman.mp3 &') # Seinfeld theme
 
 def checkDestinationButtonsInput():
     # Handles input for destination buttons
@@ -255,6 +255,7 @@ try:
                             print "Crossed!"
 
                         crossing = False
+
                     StopCounter = 0
 
                 # Middle+Right sensor or Right sensor only -> go right
@@ -303,6 +304,11 @@ try:
                             os.system('mpg321 -q arrival.mp3 &')
                             sleep(2.5)
                             quit("Pizza delivered.")
+
+                        if state == "softleft" or state == "softright":
+                            for i in range(0,destinationCrossThreshold):
+                                drive(state)
+
                                       
                     StopCounter = 0
 
@@ -311,11 +317,18 @@ try:
                     increaseStateCount(destinationState)
 
                     # Check threshold in order to change turbo state
-                    if(stateCount[destinationState] > destinationCrossThreshold):
+                    if(stateCount[destinationState] > 10): # destinationCrossThreshold
+                        print "crossing forward"
                         if(destinationState == "softleft"):
-                            state = "left" # hard left
+                            state = "left" # activate hard left
                         if(destinationState == "softright"):
-                            state = "right" # hard right
+                            state = "right" # activate hard right
+                        if(destinationState == "forward"):
+                            state = "forward"
+                            crossed = True
+                            crossing = False
+                            for i in range(0,destinationCrossThreshold):
+                                drive(state)                            
 
                     StopCounter = 0  
 
